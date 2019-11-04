@@ -6,7 +6,7 @@ exclude: ["README.md"] # files to exclude
 highlighter: rogue
 markdown: kramdown
 disqus: lunacuantica
-google_analytics: dbyll
+google_analytics: lunacuantica
 title: lunacuantica
 
 defaults:
@@ -19,10 +19,10 @@ defaults:
 description: Stylish Jekyll Theme
 disqus: dbyll-ghost # add disqus short name here
 author:
-  name: dbyll
+  name: lunacuantica
   email: dbyll@ismaildemirbilek.com
   github: dbtek
-  twitter: dbtek
+  twitter: @edersix
   pinterest: asd123
   linkedin: asd123
   bio: Your stylish, minimalist theme!
