@@ -6,7 +6,7 @@ exclude: ["README.md"] # files to exclude
 rogue: rogue
 markdown: kramdown
 disqus: lunacuantica
-google_analytics: lunacuantica
+google_analytics: UA-78414303-7
 title: lunacuantica
 
 defaults:
