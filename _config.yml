@@ -5,7 +5,7 @@ paginate_path: "page:num"
 exclude: ["README.md"] # files to exclude
 rogue: rogue
 markdown: kramdown
-disqus: lunacuantica
+disqus: codein140chars
 google_analytics: UA-78414303-7
 title: luna cuantica
 
@@ -17,7 +17,7 @@ defaults:
       title: lunacuantica
 
 description: Blog del mundo cuantico
-disqus: dbyll-ghost # add disqus short name here
+disqus: codein140chars # add disqus short name here
 author:
   name: Paulina Luna
   email: dbyll@ismaildemirbilek.com
