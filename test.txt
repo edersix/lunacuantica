@@ -1,0 +1,151 @@
+Snowflake Authentication Options for Spring Batch Job on OCP
+Context
+The current Java 21 Spring Batch application runs once per day on OpenShift Container Platform (OCP).
+The batch flow is:
+Reader loads order status records from a third-party TXT file
+Processor compares incoming order statuses with the local database
+Orders with different statuses are identified
+Writer stores those differences into Snowflake
+Current configuration:
+Secrets are retrieved from Vault
+Snowflake connectivity uses JDBC
+Application currently stores:
+Snowflake URL
+user
+warehouse
+password/PAT
+encrypted private key
+passphrase
+The goal is to replace password-based authentication with a more secure mechanism.
+Two authentication approaches are being considered:
+RSA Key Pair Authentication
+Programmatic Access Token (PAT)
+Option 1 — RSA Key Pair Authentication
+Overview
+Authentication is performed using:
+Snowflake technical user
+RSA public/private key pair
+Encrypted PKCS#8 private key
+Passphrase
+The application loads the encrypted private key from Vault, decrypts it in memory, and provides the PrivateKey object to the Snowflake JDBC driver.
+
+Snowflake validates the corresponding public key registered for the user.
+Required Changes
+Vault
+Store:
+Snowflake URL
+Snowflake user
+encrypted private key
+passphrase
+Password and PAT are no longer required.
+Application Changes
+Add BouncyCastle dependencies:
+Not supported language -4 lines
+
+gradle
+implementation 'net.snowflake:snowflake-jdbc:3.16.1'
+implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+
+
+Implement:
+private key loader utility
+PKCS#8 decryption
+datasource configuration using PrivateKey
+Example:
+java -1 line
+
+ds.setPrivateKey(privateKey);
+
+
+Snowflake Changes
+Snowflake administrators must register the RSA public key for the technical user:
+sql -2 lines
+
+ALTER USER BATCH_USER
+SET RSA_PUBLIC_KEY='...';
+
+
+Pros
+Strong security model
+No password storage
+No token expiration handling
+Well suited for automated backend services
+Long-term stable authentication mechanism
+Widely recommended for service-to-service integrations
+Reduced operational dependency on token lifecycle management
+Cons
+More implementation complexity
+Requires cryptographic key handling
+Additional libraries required (BouncyCastle)
+Requires RSA key rotation process
+Slightly more complex onboarding for support teams
+Option 2 — Programmatic Access Token (PAT)
+Overview
+Authentication is performed using a token retrieved from Vault.
+The application provides the token directly to the Snowflake JDBC driver.
+No private key handling is required.
+Required Changes
+Vault
+Store:
+Snowflake URL
+Snowflake user
+PAT/token
+Private key and passphrase are not needed.
+Application Changes
+Dependencies:
+Not supported language -2 lines
+
+gradle
+implementation 'net.snowflake:snowflake-jdbc:3.16.1'
+
+
+BouncyCastle is not required.
+Datasource configuration example:
+java -2 lines
+
+ds.setAuthenticator("oauth");
+ds.setToken(token);
+
+
+Snowflake / Security Changes
+Depends on organizational setup:
+OAuth provider
+Snowflake token policies
+Token issuance and rotation procedures
+Token expiration and renewal policies must be defined.
+Pros
+Simpler implementation
+No cryptographic key parsing
+Smaller codebase
+Easier maintenance
+Faster onboarding for developers
+Works well for short-lived batch jobs
+Good fit when Vault already manages token lifecycle
+Cons
+Token expiration management required
+Dependence on token rotation infrastructure
+Potential job failures due to expired tokens
+May require additional retry/renewal logic
+Operational dependency on identity provider availability
+Comparison Summary
+Area	Key Pair	PAT
+Security	Very strong	Strong
+Implementation Complexity	Medium	Low
+Operational Complexity	Low	Medium
+Token Expiration Issues	None	Yes
+Cryptographic Handling	Required	Not required
+Long-running Service Suitability	Excellent	Moderate
+Daily Batch Suitability	Excellent	Good
+Dependency on External Token Services	Low	High
+Recommendation
+Since the current batch job:
+runs once per day,
+is short-lived,
+already integrates with Vault,
+runs on OCP,
+both solutions are technically valid.
+Recommended guidance:
+If the organization already has mature PAT/token governance and rotation processes, PAT provides the simplest implementation.
+If long-term stability and reduced operational dependency are preferred, RSA Key Pair Authentication is the stronger solution.
+For enterprise backend batch processing, Key Pair Authentication is generally considered the standard approach. However, for a once-per-day batch job, PAT becomes a practical and supportable alternative.
